@@ -1,0 +1,174 @@
+1) شو اللي بحتاجه المستخدم عشان يشغّل الـ CLI؟
+A) Node.js + npm
+
+المشروع مكتوب TypeScript وبشتغل على Node.
+
+لازم يكون عنده Node.js (وعندكم بالمشروع محدد version عبر .nvmrc).
+
+كمان لازم يكون عنده npm (بيجي مع Node غالبًا).
+
+ليش؟
+عشان يشغل الأوامر زي npm run start ... ويثبت الحزم.
+
+B) TypeScript Runtime (tsx) + dependencies
+
+انت مستخدم tsx عشان تشغّل ملفات TypeScript مباشرة بدون ما تعمل build كل مرة.
+
+أول مرة المستخدم يشغل لازم يعمل:
+
+npm install
+
+ليش؟
+عشان ينزل كل الحزم: drizzle, postgres driver, fast-xml-parser… إلخ.
+
+C) PostgreSQL (Database Server)
+
+أهم جزء: لازم يكون عنده PostgreSQL شغال (server) و Database اسمها مثلًا gator.
+
+لازم يعرف بيانات الاتصال:
+
+username / password
+
+host / port (غالبًا localhost:5432)
+
+database name
+
+ليش؟
+لأن Gator بيخزن users/feeds/follows/posts في DB.
+
+D) Drizzle migrations (مرة واحدة)
+
+لازم يطبق migrations عشان الجداول تتعمل:
+
+users
+
+feeds
+
+feed_follows
+
+posts
+
+أوامرها:
+
+npx drizzle-kit generate
+npx drizzle-kit migrate
+
+generate ممكن تحتاجه لما تعمل تغييرات على schema، لكن migrate لازم عشان يطبّق الجداول.
+
+E) بيئة تشغيل (Windows / WSL)
+
+إنت شغال على WSL (Ubuntu) وهذا ممتاز.
+
+المهم: يشتغل داخل نفس البيئة اللي فيها Node و Postgres شغالين (WSL أفضل).
+
+2) كيف المستخدم يجهّز config ويشغّل البرنامج + أمثلة أوامر
+A) إعداد ملف الكونفيغ
+
+Gator بستعمل ملف واحد عشان:
+
+يعرف db_url (connection string)
+
+يعرف مين current_user_name (مين المستخدم الحالي)
+
+اسم الملف ومكانه:
+
+لازم يكون في HOME directory:
+
+على Linux/WSL: ~/.gatorconfig.json
+
+المحتوى الأساسي (مثال على Linux/WSL):
+
+{
+  "db_url": "postgres://postgres:postgres@localhost:5432/gator?sslmode=disable"
+}
+
+ليش sslmode=disable؟
+
+لأنك شغال محليًا، وما بدك Node يحاول يستخدم SSL مع Postgres المحلي.
+
+current_user_name ما بتكتبه بإيدك. البرنامج بضيفه لما تعمل login/register.
+
+B) كيف يشغّل البرنامج؟
+
+من root المشروع:
+
+npm run start <command> [...args]
+
+مثال:
+
+npm run start users
+أهم الأوامر اللي ممكن المستخدم يشغلها
+1) register
+
+يسجّل مستخدم جديد في DB + يعمل login تلقائيًا غالبًا (حسب تطبيقك)
+
+npm run start register lane
+
+إذا الاسم موجود من قبل رح يعطي error.
+
+2) login
+
+يخلي “المستخدم الحالي” في الكونفيغ:
+
+npm run start login lane
+
+إذا المستخدم مش موجود بالـ DB لازم يعطي error.
+
+3) users
+
+يعرض كل المستخدمين ويبين مين الحالي:
+
+npm run start users
+
+الشكل:
+
+* lane
+* allan (current)
+* hunter
+4) addfeed
+
+يضيف RSS feed جديد للـ DB ويربطه باليوزر الحالي (وبحسب تطبيقك يعمل follow تلقائي):
+
+npm run start addfeed "Hacker News" "https://news.ycombinator.com/rss"
+5) feeds
+
+يعرض كل الـ feeds الموجودة + مين اللي أضافها:
+
+npm run start feeds
+6) follow / unfollow
+
+يتابع/يلغي متابعة feed (حسب URL) لليوزر الحالي:
+
+npm run start follow "https://news.ycombinator.com/rss"
+npm run start unfollow "https://news.ycombinator.com/rss"
+7) following
+
+يعرض كل feeds اللي اليوزر الحالي متابعها:
+
+npm run start following
+8) agg
+
+يشغل الـ aggregator بشكل مستمر كل مدة (مثل 10 ثواني / 1 دقيقة):
+
+npm run start agg 10s
+
+رح يضل شغال (loop)
+
+توقفه بـ Ctrl + C
+
+9) browse
+
+يعرض آخر posts من feeds اللي اليوزر الحالي متابعها:
+
+npm run start browse
+npm run start browse 10
+
+إذا ما حطيت limit، الافتراضي 2.
+
+10) reset
+
+يمسح الداتا (للتطوير والتست):
+
+npm run start reset
+
+مهم: هذا خطر لو production، بس للتجارب ممتاز.
